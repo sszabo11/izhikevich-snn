@@ -1,0 +1,11 @@
+[package]
+name = "snn-2"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0.102"
+ndarray = "0.17.2"
+ndarray-rand = "0.16.0"
+plotters = "0.3.7"
+rand = "0.10.1"
