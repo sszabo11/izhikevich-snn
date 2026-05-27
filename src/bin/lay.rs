@@ -73,7 +73,7 @@ fn main() -> Result<()> {
         1000., 1000., 1000., -100., -100., -100., -100., -100., -100.
     ];
 
-    let output = model.run(T, input);
+    let output = model.run(T, input.view());
     println!("output: {}", output);
 
     plot_all_layers(&model.layers, "charts/layerd.png").expect("fasield to ");

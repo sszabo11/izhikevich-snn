@@ -41,18 +41,18 @@ pub struct Izhikevich {
 
     pub n_neurons: usize,
     pub n_conns: usize,
-    threshold: f32,
-    a: f32, // Time scale of the recovery variable. Smaller -> slower recovery
-    b: f32, // Sensitivty of the recovery variable. Larger -> stronger coupling
-    c: f32, // Reset voltage of membrane
-    d: f32, // Increment of the recovery variable after a spike.
+    pub threshold: f32,
+    pub a: f32, // Time scale of the recovery variable. Smaller -> slower recovery
+    pub b: f32, // Sensitivty of the recovery variable. Larger -> stronger coupling
+    pub c: f32, // Reset voltage of membrane
+    pub d: f32, // Increment of the recovery variable after a spike.
 
-    a_plus: f32,
-    a_minus: f32,
-    tau_plus: f32,
-    tau_minus: f32,
-    max_weight: f32,
-    min_weight: f32,
+    pub a_plus: f32,
+    pub a_minus: f32,
+    pub tau_plus: f32,
+    pub tau_minus: f32,
+    pub max_weight: f32,
+    pub min_weight: f32,
 }
 
 impl Izhikevich {

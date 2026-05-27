@@ -1,6 +1,6 @@
 use std::f32::consts::E;
 
-use ndarray::{Array1, Array2};
+use ndarray::{Array1, Array2, ArrayView1};
 use ndarray_rand::{
     RandomExt,
     rand_distr::{Uniform, num_traits::Pow},
@@ -44,23 +44,26 @@ impl IzhikevichModel {
     pub fn init() -> Self {
         Self { layers: Vec::new() }
     }
+
+    //pub fn builder() -> IzhikevichLayerBuilder {}
+
     pub fn add_layer(&mut self, mut layer: IzhikevichLayer) {
         layer.id = self.layers.len();
         self.layers.push(layer);
     }
 
-    pub fn run(&mut self, T: usize, input: Array1<f32>) -> Array1<f32> {
+    pub fn run(&mut self, T: usize, input: ArrayView1<f32>) -> Array1<f32> {
         let dt: f32 = 0.1;
 
-        println!("inp1: {}", input);
+        //println!("inp1: {}", input);
         let steps = (T as f32 / dt) as usize;
         let n_layers = self.layers.len();
-        let mut input_spikes: Array1<f32> = input;
+        let mut input_spikes: Array1<f32> = input.to_owned();
         let mut recent_spikes: Vec<Array1<f32>> = Vec::new();
 
         for t in 0..steps {
             for idx in 0..n_layers {
-                println!("inp: {}", input_spikes);
+                //println!("inp: {}", input_spikes);
                 let layer = &mut self.layers[idx];
                 let output = if idx == 0 {
                     layer.process(t, &input_spikes, dt, &Array1::zeros(layer.out_n))
@@ -70,6 +73,11 @@ impl IzhikevichModel {
 
                 if t == 0 {
                     recent_spikes.push(Array1::zeros(layer.out_n));
+                }
+                if t < 50 {
+                    println!("t: {} | Layer: {}: Output: {}", t, idx, output);
+                    println!("Input: {}", input_spikes);
+                    println!();
                 }
                 recent_spikes[idx] += &output;
                 input_spikes = output;
@@ -115,7 +123,7 @@ impl Default for IzhikevichLayerBuilder {
             tau_plus: 20.0,
             tau_minus: 20.0,
             max_weight: 1.0,
-            min_weight: -1.0,
+            min_weight: 0.0,
             spike_buffer_size: 256,
         }
     }
@@ -229,23 +237,25 @@ pub struct IzhikevichLayer {
     pub out_n: usize,
     pub n_conns: usize,
     pub threshold: f32,
-    a: f32, // Time scale of the recovery variable. Smaller -> slower recovery
-    b: f32, // Sensitivty of the recovery variable. Larger -> stronger coupling
-    c: f32, // Reset voltage of membrane
-    d: f32, // Increment of the recovery variable after a spike.
+    pub T: usize,
+    pub a: f32, // Time scale of the recovery variable. Smaller -> slower recovery
+    pub b: f32, // Sensitivty of the recovery variable. Larger -> stronger coupling
+    pub c: f32, // Reset voltage of membrane
+    pub d: f32, // Increment of the recovery variable after a spike.
 
     pub id: usize,
-    a_plus: f32,
-    a_minus: f32,
-    tau_plus: f32,
-    tau_minus: f32,
-    max_weight: f32,
-    min_weight: f32,
+    pub a_plus: f32,
+    pub a_minus: f32,
+    pub tau_plus: f32,
+    pub tau_minus: f32,
+    pub max_weight: f32,
+    pub min_weight: f32,
 }
 
 impl IzhikevichLayer {
     pub fn from_builder(builder: IzhikevichLayerBuilder) -> Self {
         let out_n = builder.out_n;
+        //println!("{} {}", builder.min_weight, builder.max_weight);
 
         Self {
             in_n: builder.in_n,
@@ -256,6 +266,7 @@ impl IzhikevichLayer {
             b: builder.b,
             id: 0,
             c: builder.c,
+            T: builder.T,
             d: builder.d,
             recent_spikes: Array1::zeros(builder.out_n),
             a_plus: builder.a_plus,
@@ -313,6 +324,10 @@ impl IzhikevichLayer {
         dt: f32,
         recent_spikes: &Array1<f32>,
     ) -> Array1<f32> {
+        assert!(self.out_n == self.weights.nrows());
+        assert!(self.conns.nrows() == self.out_n);
+        assert!(self.n_conns == self.weights.ncols());
+        assert!(input.len() == self.in_n);
         //let dt: f32 = 0.1;
 
         //let mut u_values = Array2::zeros((steps, self.out_n));
@@ -335,12 +350,14 @@ impl IzhikevichLayer {
             //println!("{}", logger.spikes_data);
             //if t != 0 {
             for (j, &conn_n_idx) in self.conns.row(i).iter().enumerate() {
+                //println!("i, k: {} {}", i, j);
+
                 let weight = self.weights[[i, j as usize]];
                 let pre_spike = input[conn_n_idx as usize] as f32;
                 let v_incoming = pre_spike * weight;
-                if i == 0 && self.id == 1 && t == 0 {
-                    //println!("v inc: {} | {} | {}", v_incoming, weight, pre_spike);
-                }
+                //if i == 0 && self.id == 1 && t == 0 {
+                //    //println!("v inc: {} | {} | {}", v_incoming, weight, pre_spike);
+                //}
 
                 I += v_incoming;
             }
